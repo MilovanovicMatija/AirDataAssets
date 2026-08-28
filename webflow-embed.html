@@ -1,30 +1,15 @@
 <!-- ====================================================================
   AirData 3D — Webflow Embed
   Paste this whole file into an Embed element placed INSIDE .ad3d__inner,
-  right after the .ad3d__copy div. Text elements are built natively in
-  Webflow; this embed carries the drone stage, the HUD and all functional
-  CSS (scroll mechanics, accordion/crossfade, layout skeleton).
-  Typography of the native text elements is styled in the Designer.
+  right after the .ad3d__copy div. Everything visual/spacing-related on the
+  native text elements is styled in the Designer; this embed carries ONLY
+  what Webflow can't do: JS-driven state mechanics, the aspect-ratio stage,
+  the HUD, and the mobile layout overrides.
 ===================================================================== -->
 <style>
-  /* ---- section skeleton (do not restyle these in the Designer) ---- */
-  .ad3d { position: relative; height: 400vh; }
-
-  .ad3d__sticky { position: sticky; top: 0; padding: 32px 0; }
-
-  .ad3d__inner {
-    width: 100%;
-    max-width: 1320px;
-    margin: 0 auto;
-    padding: 0 48px;
-    display: grid;
-    grid-template-columns: minmax(300px, 380px) 1fr;
-    gap: 64px;
-    align-items: center;
-  }
-
-  /* ---- step accordion mechanics (colors/fonts: style in Designer) ---- */
+  /* ---- step accordion mechanics (JS toggles .is-active) ---- */
   .ad3d__step-title { transition: color 0.4s ease; }
+  .ad3d__step.is-active .ad3d__step-title { color: #161616; }
 
   .ad3d__step-body {
     max-height: 0;
