@@ -486,7 +486,13 @@ function trySnap() {
   if (dist > SNAP_RADIUS) { return; }  // too far — don't yank, leave it be
 
   const top = window.scrollY + rect.top + nearest * scrollable;
-  window.scrollTo({ top, behavior: 'smooth' });
+  // The host site may run Lenis smooth scroll — native smooth scrollTo would
+  // fight its animation loop, so go through Lenis when it's exposed.
+  if (window.lenis && typeof window.lenis.scrollTo === 'function') {
+    window.lenis.scrollTo(top);
+  } else {
+    window.scrollTo({ top, behavior: 'smooth' });
+  }
 }
 
 window.addEventListener('scroll', () => {
