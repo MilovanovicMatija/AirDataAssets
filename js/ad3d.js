@@ -539,8 +539,8 @@ const copyEl  = document.querySelector('.ad3d__copy');
 // switching steps never shifts anything, then hand the drone panel whatever
 // vertical space remains (its width follows from the 780/640 aspect ratio).
 function layoutMobile() {
-  if (!mqMobile.matches) {
-    copyEl.style.height = '';
+  if (!mqMobile.matches || !copyEl) {
+    if (copyEl) { copyEl.style.height = ''; }
     stage.style.width = '';
     return;
   }
@@ -560,10 +560,14 @@ function layoutMobile() {
 }
 
 function placeIntro() {
-  if (mqMobile.matches) {
-    if (introEl.parentElement !== track) { track.insertBefore(introEl, sticky); }
-  } else if (introEl.parentElement !== copyEl) {
-    copyEl.insertBefore(introEl, copyEl.firstChild);
+  // intro/copy may be absent while the host page is still being built —
+  // never let a missing text element take the whole module down
+  if (introEl && copyEl) {
+    if (mqMobile.matches) {
+      if (introEl.parentElement !== track) { track.insertBefore(introEl, sticky); }
+    } else if (introEl.parentElement !== copyEl) {
+      copyEl.insertBefore(introEl, copyEl.firstChild);
+    }
   }
   layoutMobile();
   resize(); // sticky height changed — recenter/repin it
@@ -743,6 +747,7 @@ function updateHUD() {
 let activeStep = 0;
 
 function updateSteps(p) {
+  if (!steps.length) { return; }
   const next = Math.min(POSES.length - 1, Math.round(p * (POSES.length - 1)));
   if (next !== activeStep) {
     steps[activeStep].classList.remove('is-active');
