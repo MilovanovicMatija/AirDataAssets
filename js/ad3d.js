@@ -585,7 +585,9 @@ function clearStepHeights() {
 
 function layoutMobile() {
   if (!mqMobile.matches || !stepsWrap) {
-    if (stepsWrap) { stepsWrap.style.height = ''; stepsWrap.style.position = ''; }
+    if (stepsWrap) {
+      for (const prop of ['height', 'position', 'width', 'alignSelf']) { stepsWrap.style[prop] = ''; }
+    }
     for (const s of steps) { s.style.opacity = ''; s.style.transform = ''; s.style.transition = ''; }
     stage.style.width = '';
     applyStepHeights();   // desktop accordion (re-measures on resize)
@@ -596,9 +598,14 @@ function layoutMobile() {
   // Steps are absolutely stacked on mobile (crossfade), so their wrapper
   // gets the explicit height of the tallest step — switching never shifts
   // anything below.
+  // absolutely positioned steps give their wrapper no size of its own, so
+  // force it to full width (a flex parent with align-items: start would
+  // otherwise shrink it to zero and the text wraps word by word)
+  stepsWrap.style.width = '100%';
+  stepsWrap.style.alignSelf = 'stretch';
+  stepsWrap.style.position = 'relative';
   let maxH = 0;
   for (const s of steps) { maxH = Math.max(maxH, s.offsetHeight); }
-  stepsWrap.style.position = 'relative';
   stepsWrap.style.height = `${maxH}px`;
   // panel width/height on mobile is left to CSS (host page controls it)
   stage.style.width = '';
