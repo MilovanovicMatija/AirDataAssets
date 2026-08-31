@@ -544,14 +544,54 @@ const copyEl  = document.querySelector('.ad3d__copy');
 // The element the steps are stacked inside (ad3d__copy locally, or a
 // dedicated ad3d__steps wrapper in the Webflow build)
 const stepsWrap = steps.length ? steps[0].parentElement : null;
+const stepBodies = steps.map((s) => s.querySelector('.ad3d__step-body'));
+
+// Desktop accordion with measured heights. The CSS max-height trick animates
+// to a fixed cap (420px) while the real content is ~150px, so the visible
+// part only moves in the last third of the animation and it feels abrupt.
+// Here each body animates to its exact scrollHeight with a soft ease, the
+// closing one collapses first and the opening one follows a beat later.
+const STEP_EASE = 'cubic-bezier(0.65, 0, 0.35, 1)';
+
+function applyStepHeights() {
+  if (mqMobile.matches) { return; }
+  steps.forEach((s, i) => {
+    const b = stepBodies[i];
+    if (!b) { return; }
+    b.style.maxHeight = 'none';
+    b.style.overflow = 'hidden';
+    if (s.classList.contains('is-active')) {
+      b.style.transition = `height 0.8s ${STEP_EASE} 0.2s, opacity 0.5s ease 0.4s, margin-top 0.8s ${STEP_EASE} 0.2s`;
+      b.style.height = `${b.scrollHeight}px`;
+      b.style.opacity = '1';
+      b.style.marginTop = '12px';
+    } else {
+      b.style.transition = `height 0.6s ${STEP_EASE}, opacity 0.25s ease, margin-top 0.6s ${STEP_EASE}`;
+      b.style.height = '0px';
+      b.style.opacity = '0';
+      b.style.marginTop = '0px';
+    }
+  });
+}
+
+function clearStepHeights() {
+  for (const b of stepBodies) {
+    if (!b) { continue; }
+    for (const prop of ['maxHeight', 'overflow', 'transition', 'height', 'opacity', 'marginTop']) {
+      b.style[prop] = '';
+    }
+  }
+}
 
 function layoutMobile() {
   if (!mqMobile.matches || !stepsWrap) {
     if (stepsWrap) { stepsWrap.style.height = ''; stepsWrap.style.position = ''; }
     for (const s of steps) { s.style.opacity = ''; s.style.transform = ''; s.style.transition = ''; }
     stage.style.width = '';
+    applyStepHeights();   // desktop accordion (re-measures on resize)
     return;
   }
+  clearStepHeights();     // mobile crossfade owns the bodies
 
   // Steps are absolutely stacked on mobile (crossfade), so their wrapper
   // gets the explicit height of the tallest step — switching never shifts
@@ -786,6 +826,7 @@ function updateSteps(p) {
     steps[activeStep].classList.remove('is-active');
     steps[next].classList.add('is-active');
     activeStep = next;
+    applyStepHeights();
   }
 }
 
