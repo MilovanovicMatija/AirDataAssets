@@ -563,10 +563,20 @@ function placeIntro() {
   // intro/copy may be absent while the host page is still being built —
   // never let a missing text element take the whole module down
   if (introEl && copyEl) {
-    if (mqMobile.matches) {
-      if (introEl.parentElement !== track) { track.insertBefore(introEl, sticky); }
-    } else if (introEl.parentElement !== copyEl) {
-      copyEl.insertBefore(introEl, copyEl.firstChild);
+    try {
+      if (mqMobile.matches) {
+        // right before the sticky block, whatever wrappers the host page
+        // has put around it (Webflow nests it in container divs)
+        if (introEl.nextElementSibling !== sticky) {
+          sticky.parentElement.insertBefore(introEl, sticky);
+        }
+        introEl.classList.add('ad3d__intro--out');
+      } else if (introEl.parentElement !== copyEl) {
+        copyEl.insertBefore(introEl, copyEl.firstChild);
+        introEl.classList.remove('ad3d__intro--out');
+      }
+    } catch (err) {
+      console.warn('[ad3d] could not relocate intro:', err);
     }
   }
   layoutMobile();
