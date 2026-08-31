@@ -519,8 +519,9 @@ function resize() {
   hudRoot.style.fontSize = `${15.6 * hudScale}px`;
   // center the natural-height sticky block within the viewport while pinned;
   // on mobile the sticky block is full-viewport, so it pins flush to the top
+  // on mobile the host page owns `top` (e.g. to clear a fixed nav)
   sticky.style.top = mqMobile.matches
-    ? '0px'
+    ? ''
     : `${Math.max(16, (window.innerHeight - sticky.offsetHeight) / 2)}px`;
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
@@ -551,12 +552,8 @@ function layoutMobile() {
   let maxH = 0;
   for (const s of steps) { maxH = Math.max(maxH, s.offsetHeight); }
   copyEl.style.height = `${maxH}px`;
-
-  // inner top padding (16) + gap (16) sit above the panel
-  const available = sticky.clientHeight - maxH - 32;
-  const maxW = Math.max(200, available * (780 / 640));
-  const innerW = stage.parentElement.clientWidth - 48; // minus side paddings
-  stage.style.width = `${Math.min(innerW, maxW)}px`;
+  // panel width/height on mobile is left to CSS (host page controls it)
+  stage.style.width = '';
 }
 
 function placeIntro() {
