@@ -18,7 +18,9 @@ const ASSET_BASE = new URL('..', import.meta.url).href;
 // Draco-compressed GLBs (~0.3-0.4 MB), shipped XOR-scrambled under a neutral
 // .bin extension so the asset can't be grabbed from the network tab and opened
 // in 3D software (TurboSquid "reasonable steps"). Lighter mesh goes to mobile.
-const IS_MOBILE = window.matchMedia('(max-width: 860px)').matches;
+// Matches the Webflow tablet breakpoint — must equal the @media in the embed
+const MOBILE_BP = 991;
+const IS_MOBILE = window.matchMedia(`(max-width: ${MOBILE_BP}px)`).matches;
 const MODEL_URL = ASSET_BASE + (IS_MOBILE ? 'assets/model/d3.bin' : 'assets/model/d6.bin');
 
 // --------------------------------------------------------------------------
@@ -92,7 +94,7 @@ const stage  = document.getElementById('ad3d-stage');
 const track  = document.getElementById('ad3d');
 const sticky = track.querySelector('.ad3d__sticky');
 const steps  = Array.from(document.querySelectorAll('.ad3d__step'));
-const mqMobile = window.matchMedia('(max-width: 860px)');
+const mqMobile = window.matchMedia(`(max-width: ${MOBILE_BP}px)`);
 
 // HUD overlay --------------------------------------------------------------
 const hudRoot = document.getElementById('ad3d-hud');
@@ -539,21 +541,45 @@ const copyEl  = document.querySelector('.ad3d__copy');
 // Variant-A mobile layout: reserve the height of the TALLEST expanded step so
 // switching steps never shifts anything, then hand the drone panel whatever
 // vertical space remains (its width follows from the 780/640 aspect ratio).
+// The element the steps are stacked inside (ad3d__copy locally, or a
+// dedicated ad3d__steps wrapper in the Webflow build)
+const stepsWrap = steps.length ? steps[0].parentElement : null;
+
 function layoutMobile() {
-  if (!mqMobile.matches || !copyEl) {
-    if (copyEl) { copyEl.style.height = ''; }
+  if (!mqMobile.matches || !stepsWrap) {
+    if (stepsWrap) { stepsWrap.style.height = ''; stepsWrap.style.position = ''; }
+    for (const s of steps) { s.style.opacity = ''; s.style.transform = ''; s.style.transition = ''; }
     stage.style.width = '';
     return;
   }
 
-  // Steps are absolutely stacked on mobile (crossfade), so the copy block
+  // Steps are absolutely stacked on mobile (crossfade), so their wrapper
   // gets the explicit height of the tallest step — switching never shifts
   // anything below.
   let maxH = 0;
   for (const s of steps) { maxH = Math.max(maxH, s.offsetHeight); }
-  copyEl.style.height = `${maxH}px`;
+  stepsWrap.style.position = 'relative';
+  stepsWrap.style.height = `${maxH}px`;
   // panel width/height on mobile is left to CSS (host page controls it)
   stage.style.width = '';
+}
+
+// Mobile crossfade driven by scroll position instead of a timed CSS
+// transition: each step is fully visible around its hold (0 / 0.5 / 1),
+// fades out on the way to the midpoint, and the next one fades in after a
+// small dead zone, drifting in the scroll direction. Scrubs with the finger.
+function updateStepsMobile(p) {
+  const segs = POSES.length - 1;
+  for (let i = 0; i < steps.length; i++) {
+    const c = i / segs;                             // this step's hold
+    const d = Math.abs(p - c) * segs;               // 0 at hold, 1 at midpoint
+    const op = 1 - THREE.MathUtils.smoothstep(d, 0.55, 0.9);
+    const dir = Math.sign(p - c) || 0;
+    const s = steps[i];
+    s.style.transition = 'none';
+    s.style.opacity = op.toFixed(3);
+    s.style.transform = `translateY(${(-dir * (1 - op) * 14).toFixed(1)}px)`;
+  }
 }
 
 function placeIntro() {
@@ -835,6 +861,7 @@ function tick(now) {
     applyPose(currentProgress);
     renderer.render(scene, camera);
     updateHUD();
+    if (mqMobile.matches) { updateStepsMobile(currentProgress); }
     needsRender = !settled;
   }
 }
