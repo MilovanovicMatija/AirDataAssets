@@ -541,9 +541,6 @@ const copyEl  = document.querySelector('.ad3d__copy');
 // Variant-A mobile layout: reserve the height of the TALLEST expanded step so
 // switching steps never shifts anything, then hand the drone panel whatever
 // vertical space remains (its width follows from the 780/640 aspect ratio).
-// The element the steps are stacked inside (ad3d__copy locally, or a
-// dedicated ad3d__steps wrapper in the Webflow build)
-const stepsWrap = steps.length ? steps[0].parentElement : null;
 const stepBodies = steps.map((s) => s.querySelector('.ad3d__step-body'));
 
 // Desktop accordion with measured heights. The CSS max-height trick animates
@@ -584,49 +581,22 @@ function clearStepHeights() {
 }
 
 function layoutMobile() {
-  if (!mqMobile.matches || !stepsWrap) {
-    if (stepsWrap) {
-      for (const prop of ['height', 'position', 'width', 'alignSelf']) { stepsWrap.style[prop] = ''; }
-    }
-    for (const s of steps) { s.style.opacity = ''; s.style.transform = ''; s.style.transition = ''; }
+  if (!mqMobile.matches || !copyEl) {
+    if (copyEl) { copyEl.style.height = ''; }
     stage.style.width = '';
     applyStepHeights();   // desktop accordion (re-measures on resize)
     return;
   }
-  clearStepHeights();     // mobile crossfade owns the bodies
+  clearStepHeights();     // mobile crossfade (CSS in the embed) owns the bodies
 
-  // Steps are absolutely stacked on mobile (crossfade), so their wrapper
+  // Steps are absolutely stacked on mobile (crossfade), so the copy block
   // gets the explicit height of the tallest step — switching never shifts
   // anything below.
-  // absolutely positioned steps give their wrapper no size of its own, so
-  // force it to full width (a flex parent with align-items: start would
-  // otherwise shrink it to zero and the text wraps word by word)
-  stepsWrap.style.width = '100%';
-  stepsWrap.style.alignSelf = 'stretch';
-  stepsWrap.style.position = 'relative';
   let maxH = 0;
   for (const s of steps) { maxH = Math.max(maxH, s.offsetHeight); }
-  stepsWrap.style.height = `${maxH}px`;
+  copyEl.style.height = `${maxH}px`;
   // panel width/height on mobile is left to CSS (host page controls it)
   stage.style.width = '';
-}
-
-// Mobile crossfade driven by scroll position instead of a timed CSS
-// transition: each step is fully visible around its hold (0 / 0.5 / 1),
-// fades out on the way to the midpoint, and the next one fades in after a
-// small dead zone, drifting in the scroll direction. Scrubs with the finger.
-function updateStepsMobile(p) {
-  const segs = POSES.length - 1;
-  for (let i = 0; i < steps.length; i++) {
-    const c = i / segs;                             // this step's hold
-    const d = Math.abs(p - c) * segs;               // 0 at hold, 1 at midpoint
-    const op = 1 - THREE.MathUtils.smoothstep(d, 0.55, 0.9);
-    const dir = Math.sign(p - c) || 0;
-    const s = steps[i];
-    s.style.transition = 'none';
-    s.style.opacity = op.toFixed(3);
-    s.style.transform = `translateY(${(-dir * (1 - op) * 14).toFixed(1)}px)`;
-  }
 }
 
 function placeIntro() {
@@ -909,7 +879,6 @@ function tick(now) {
     applyPose(currentProgress);
     renderer.render(scene, camera);
     updateHUD();
-    if (mqMobile.matches) { updateStepsMobile(currentProgress); }
     needsRender = !settled;
   }
 }
