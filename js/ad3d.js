@@ -623,7 +623,9 @@ function placeIntro() {
   resize(); // sticky height changed — recenter/repin it
 }
 mqMobile.addEventListener('change', placeIntro);
-window.addEventListener('resize', layoutMobile);
+// any window resize (height too — the stage ResizeObserver only sees width
+// changes) recomputes the sticky top offset
+window.addEventListener('resize', () => { layoutMobile(); resize(); });
 document.fonts?.ready.then(layoutMobile);   // re-measure once webfonts land
 placeIntro();
 
